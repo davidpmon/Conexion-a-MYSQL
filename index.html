@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Usuarios</title>
+    <script>
+        async function obtenerUsuarios() {
+            const response = await fetch('/usuarios');
+            if (response.ok) {
+                const usuarios = await response.json();
+                const listaUsuarios = document.getElementById('lista-usuarios');
+                listaUsuarios.innerHTML = '';
+                usuarios.forEach(usuario => {
+                    const li = document.createElement('li');
+                    li.textContent = `ID: ${usuario.id}, Nombre: ${usuario.nombre}`;
+                    listaUsuarios.appendChild(li);
+                });
+            } else {
+                console.error("Error al obtener usuarios");
+            }
+        }
+
+        async function registrarUsuario() {
+            const nombre = document.getElementById('nombre').value.trim();
+
+            if (!nombre) {
+                alert("El nombre no puede estar vacío");
+                return;
+            }
+
+            if (nombre.length < 2 || nombre.length > 50) {
+                alert("El nombre debe tener entre 2 y 50 caracteres");
+                return;
+            }
+
+            if (!/^[a-zA-Z]+$/.test(nombre)) {
+                alert("El nombre solo puede contener letras");
+                return;
+            }
+
+            const response = await fetch('/usuarios', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ nombre })
+            });
+
+            if (response.ok) {
+                await obtenerUsuarios();
+            } else {
+                console.error("Error al registrar el usuario");
+            }
+        }
+
+        async function buscarUsuarioPorId() {
+            const usuarioId = document.getElementById('usuario-id').value.trim();
+            const response = await fetch(`/usuarios/${usuarioId}`);
+            const resultado = document.getElementById('resultado-busqueda');
+            if (response.ok) {
+                const usuario = await response.json();
+                resultado.textContent = `Usuario encontrado: ID: ${usuario.id}, Nombre: ${usuario.nombre}`;
+            } else {
+                resultado.textContent = "Usuario no encontrado";
+            }
+        }
+
+        // Nueva función para eliminar usuario por ID
+        async function eliminarUsuario() {
+            const usuarioId = document.getElementById('eliminar-id').value.trim();
+            if (!usuarioId) {
+                alert("Debes ingresar un ID válido.");
+                return;
+            }
+
+            const response = await fetch(`/usuarios/${usuarioId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': 'Basic ' + btoa('admin:admin') // Agregar autenticación básica
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                alert(data.mensaje);
+                await obtenerUsuarios(); // Actualizar lista de usuarios después de eliminar
+            } else {
+                const error = await response.json();
+                alert(error.error || "Error al eliminar el usuario.");
+            }
+        }
+
+        // Cargar la lista de usuarios al cargar la página
+        window.onload = obtenerUsuarios;
+    </script>
+</head>
+<body>
+    <h1>Gestión de Usuarios</h1>
+
+    <!-- Registrar un nuevo usuario -->
+    <h2>Registrar Usuario</h2>
+    <input type="text" id="nombre" placeholder="Nombre del usuario" />
+    <button onclick="registrarUsuario()">Registrar Usuario</button>
+
+    <!-- Eliminar un usuario -->
+    <h2>Eliminar Usuario</h2>
+    <input type="number" id="eliminar-id" placeholder="ID del usuario a eliminar" />
+    <button onclick="eliminarUsuario()">Eliminar Usuario</button>
+
+    <!-- Lista de usuarios -->
+    <h2>Usuarios:</h2>
+    <ul id="lista-usuarios"></ul>
+</body>
+</html>
